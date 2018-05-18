@@ -186,7 +186,7 @@ macro_rules! hal {
                     assert!(brr >= 16, "impossible baud rate");
                     usart.brr.write(|w| unsafe { w.bits(brr) });
 
-
+                    usart.cr2.write(|w| w.msbfirst().set_bit());
                     let data_bits_7 = 0b00010000_00000000_00000000_00000000;
                     let data_bits_8 = 0b00000000_00000000_00000000_00000000;
                     let data_bits_9 = 0b00000000_00000000_00010000_00000000;
