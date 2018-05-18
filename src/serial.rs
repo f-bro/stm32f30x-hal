@@ -238,7 +238,7 @@ macro_rules! hal {
                         _8E2 => {
                             usart.cr1.write(|w| unsafe {  w.bits(data_bits_8) });
                             usart.cr1.modify(|_, w| w.pce().set_bit().ps().clear_bit());
-                            usart.cr2.write(|w| unsafe {  w.stop().bits(10) });
+                            usart.cr2.modify(|_, w| unsafe {  w.stop().bits(10) });
                         }
                         _8O1 => {
                             usart.cr1.write(|w| unsafe {  w.bits(data_bits_8) });
