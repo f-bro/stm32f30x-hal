@@ -92,6 +92,68 @@ pub struct Tx<USART> {
     _usart: PhantomData<USART>,
 }
 
+/// Format definition for serial transmission using start-stop mode
+/// XYZ
+/// X: number of data bits
+/// Y: parity check (none, even, odd)
+/// Z: number of stop bits (1, 2)
+#[derive(Copy, Clone, Debug)]
+pub enum DataFormat {
+    /// 7 data bits, none parity check, 1 stop bit
+    _7N1,
+
+    /// 7 data bits, none parity check, 2 stop bits
+    _7N2,
+
+    /// 7 data bits, even parity check, 1 stop bit
+    _7E1,
+
+    /// 7 data bits, even parity check, 2 stop bits
+    _7E2,
+
+    /// 7 data bits, odd parity check, 1 stop bit
+    _7O1,
+
+    /// 7 data bits, odd parity check, 2 stop bits
+    _7O2,
+
+    /// 8 data bits, none parity check, 1 stop bit
+    _8N1,
+
+    /// 8 data bits, none parity check, 2 stop bits
+    _8N2,
+
+    /// 8 data bits, even parity check, 1 stop bit
+    _8E1,
+
+    /// 8 data bits, even parity check, 2 stop bits
+    _8E2,
+
+    /// 8 data bits, odd parity check, 1 stop bit
+    _8O1,
+
+    /// 8 data bits, odd parity check, 2 stop bits
+    _8O2,
+
+    /// 9 data bits, none parity check, 1 stop bit
+    _9N1,
+
+    /// 9 data bits, none parity check, 2 stop bits
+    _9N2,
+
+    /// 9 data bits, even parity check, 1 stop bit
+    _9E1,
+
+    /// 9 data bits, even parity check, 2 stop bits
+    _9E2,
+
+    /// 9 data bits, odd parity check, 1 stop bit
+    _9O1,
+
+    /// 9 data bits, odd parity check, 2 stop bits
+    _9O2,
+}
+
 macro_rules! hal {
     ($(
         $USARTX:ident: ($usartX:ident, $APB:ident, $usartXen:ident, $usartXrst:ident, $pclkX:ident),
@@ -105,6 +167,7 @@ macro_rules! hal {
                     baud_rate: Bps,
                     clocks: Clocks,
                     apb: &mut $APB,
+                    format: DataFormat,
                 ) -> Self
                 where
                     TX: TxPin<$USARTX>,
@@ -123,12 +186,109 @@ macro_rules! hal {
                     assert!(brr >= 16, "impossible baud rate");
                     usart.brr.write(|w| unsafe { w.bits(brr) });
 
+
+                    let data_bits_7 = 0b00010000_00000000_00000000_00000000;
+                    let data_bits_8 = 0b00000000_00000000_00000000_00000000;
+                    let data_bits_9 = 0b00000000_00000000_00010000_00000000;
+
+                    use self::DataFormat::*;
+
+                    match format {
+                        _7N1 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_7) });
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(00) });
+                        },
+                        _7N2 => {
+                            usart.cr1.write(|w| unsafe { w.bits(data_bits_7) });
+                            usart.cr2.write(|w| unsafe { w.stop().bits(10) });
+                        },
+                        _7E1 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_7) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().clear_bit());
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(00) });
+                        },
+                        _7E2 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_7) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().clear_bit());
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(10) });
+                        }
+                        _7O1 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_7) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().set_bit());
+                            usart.cr2.write(|w| unsafe { w.stop().bits(00) });
+                        },
+                        _7O2 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_7) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().set_bit());
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(10) });
+                        },
+                        _8N1 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_8) });
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(00) });
+                        },
+                        _8N2 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_8) });
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(10) });
+                        },
+                        _8E1 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_8) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().clear_bit());
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(00) });
+                        },
+                        _8E2 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_8) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().clear_bit());
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(10) });
+                        }
+                        _8O1 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_8) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().set_bit());
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(00) });
+                        },
+                        _8O2 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_8) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().set_bit());
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(10) });
+                        },
+                        _9N1 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_9) });
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(00) });
+                        },
+                        _9N2 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_9) });
+                            usart.cr2.write(|w| unsafe { w.stop().bits(10) });
+                        },
+                        _9E1 => {
+                            usart.cr1.write(|w| unsafe { w.bits(data_bits_9) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().clear_bit());
+                            usart.cr2.write(|w| unsafe {  w.stop().bits(00) });
+                        },
+                        _9E2 => {
+                            usart.cr1.write(|w| unsafe { w.bits(data_bits_9) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().clear_bit());
+                            usart.cr2.write(|w| unsafe { w.stop().bits(10) });
+                        }
+                        _9O1 => {
+                            usart.cr1.write(|w| unsafe {  w.bits(data_bits_9) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().set_bit());
+                            usart.cr2.write(|w| unsafe { w.stop().bits(00) });
+                        },
+                        _9O2 => {
+                            usart.cr1.write(|w| unsafe { w.bits(data_bits_9) });
+                            usart.cr1.modify(|_, w| w.pce().set_bit().ps().set_bit());
+                            usart.cr2.write(|w| unsafe { w.stop().bits(10) });
+                        },
+                    }
+
+                    // TODO: Möglichkeit hinzufügen das Datenformat zu definieren wie 8N2 oder 7E1 
+
+
                     // UE: enable USART
                     // RE: enable receiver
                     // TE: enable transceiver
                     usart
                         .cr1
-                        .write(|w| w.ue().set_bit().re().set_bit().te().set_bit());
+                        .modify(|_, w| w.ue().set_bit().re().set_bit().te().set_bit());
 
                     Serial { usart, pins }
                 }
